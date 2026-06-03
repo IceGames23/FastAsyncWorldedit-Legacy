@@ -130,10 +130,13 @@ public class ReflectionUtils {
         // let's make the field accessible
         field.setAccessible(true);
 
-        // next we change the modifier in the Field instance to
-        // not be final anymore, thus tricking reflection into
-        // letting us modify the static final field
-        if (Modifier.isFinal(field.getModifiers())) {
+        // Clearing the final modifier is only required for STATIC final fields. A non-static
+        // final field is already writable once setAccessible(true) was called, because the
+        // reflective override flag bypasses the final check for instance fields. The IMPL_LOOKUP
+        // trick below only works on Java 8 or when java.lang.invoke is opened to unnamed modules
+        // (--add-opens java.base/java.lang.invoke=ALL-UNNAMED). On a locked-down Java 9+ runtime it
+        // throws InaccessibleObjectException; swallow it silently instead of flooding the console.
+        if (Modifier.isFinal(field.getModifiers()) && Modifier.isStatic(field.getModifiers())) {
             try {
                 Field lookupField = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
                 lookupField.setAccessible(true);
@@ -142,8 +145,8 @@ public class ReflectionUtils {
                 ((MethodHandles.Lookup) lookupField.get(null))
                         .findSetter(Field.class, "modifiers", int.class)
                         .invokeExact(field, field.getModifiers() & ~Modifier.FINAL);
-            } catch (Throwable e) {
-                e.printStackTrace();
+            } catch (Throwable ignored) {
+                // Java 9+ without --add-opens: cannot clear the final bit reflectively.
             }
         }
 

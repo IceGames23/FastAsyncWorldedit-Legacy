@@ -444,7 +444,11 @@ public class Config {
      */
     private void setAccessible(Field field) throws NoSuchFieldException, IllegalAccessException {
         field.setAccessible(true);
-        if (Modifier.isFinal(field.getModifiers())) {
+        // Only STATIC final fields need the final bit cleared; reading or writing a non-static /
+        // non-final config field never requires it. On Java 9+ without
+        // --add-opens java.base/java.lang.invoke=ALL-UNNAMED the IMPL_LOOKUP access throws
+        // InaccessibleObjectException; swallow it silently instead of flooding the console.
+        if (Modifier.isFinal(field.getModifiers()) && Modifier.isStatic(field.getModifiers())) {
             try {
                 Field lookupField = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
                 lookupField.setAccessible(true);
@@ -453,8 +457,8 @@ public class Config {
                 ((MethodHandles.Lookup) lookupField.get(null))
                         .findSetter(Field.class, "modifiers", int.class)
                         .invokeExact(field, field.getModifiers() & ~Modifier.FINAL);
-            } catch (Throwable e) {
-                e.printStackTrace();
+            } catch (Throwable ignored) {
+                // Java 9+ without --add-opens: cannot clear the final bit reflectively.
             }
         }
     }

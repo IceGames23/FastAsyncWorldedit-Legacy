@@ -104,10 +104,10 @@ public class ReflectionUtils9 {
         // let's make the field accessible
         field.setAccessible(true);
 
-        // next we change the modifier in the Field instance to
-        // not be final anymore, thus tricking reflection into
-        // letting us modify the static final field
-        if (Modifier.isFinal(field.getModifiers())) {
+        // Only STATIC final fields need the final bit cleared (see ReflectionUtils for details).
+        // On Java 9+ without --add-opens java.base/java.lang.invoke=ALL-UNNAMED this throws
+        // InaccessibleObjectException; swallow it silently instead of flooding the console.
+        if (Modifier.isFinal(field.getModifiers()) && Modifier.isStatic(field.getModifiers())) {
             try {
                 Field lookupField = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
                 lookupField.setAccessible(true);
@@ -116,18 +116,14 @@ public class ReflectionUtils9 {
                 ((MethodHandles.Lookup) lookupField.get(null))
                         .findSetter(Field.class, "modifiers", int.class)
                         .invokeExact(field, field.getModifiers() & ~Modifier.FINAL);
-            } catch (Throwable e) {
-                e.printStackTrace();
+            } catch (Throwable ignored) {
+                // Java 9+ without --add-opens: cannot clear the final bit reflectively.
             }
         }
 
         try {
-            System.out.println("Target " + target + " | " + field.getName());
             if (target == null) field.set(null, value);
             else field.set(target, value);
-
-//            FieldAccessor fa = ReflectionFactory.getReflectionFactory().newFieldAccessor(field, false);
-//            fa.set(target, value);
         } catch (NoSuchMethodError error) {
             field.set(target, value);
         }
