@@ -5,9 +5,12 @@ dependencies {
     testCompile 'junit:junit:4.13.1'
     compile 'org.yaml:snakeyaml:1.33'
     compile 'com.google.code.gson:gson:2.8.9'
-    compile 'net.fabiozumbi12:redprotect:1.9.6'
     compileOnly files ('../libs/PlotSquared-Bukkit-3.823.jar')
-    compile 'org.primesoft:BlocksHub:2.0'
+    // BlocksHub: upstream artifact (org.primesoft:BlocksHub:2.0) is no longer
+    // downloadable, so we vendor a minimal compile-only API stub. It is never
+    // shaded into the jar; the real classes come from the BlocksHub plugin at
+    // runtime. See lib/blockshub-stub-src/. (redprotect was an unused dep -> removed.)
+    compileOnly files('lib/BlocksHub-2.0.jar')
     compile 'com.github.luben:zstd-jni:1.1.1'
 //    compile 'org.javassist:javassist:3.22.0-CR1'
     compile 'co.aikar:fastutil-lite:1.0'

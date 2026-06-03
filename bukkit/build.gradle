@@ -3,6 +3,10 @@ repositories {
 }
 dependencies {
     compile project(':core')
+    // BlocksHub API stub (see core/build.gradle). core now exposes it as
+    // compileOnly (non-transitive), so bukkit must declare it too for
+    // FaweBukkit's `import org.primesoft.blockshub.BlocksHubBukkit`.
+    compileOnly files('../core/lib/BlocksHub-2.0.jar')
     compile 'com.sk89q:worldguard:6.0.0-SNAPSHOT'
     compile('com.destroystokyo.paper:paper-api:1.12-R0.1-SNAPSHOT') {
         exclude group: 'net.md-5'
